@@ -18,11 +18,18 @@ cTime = 0
 pTime = 0
 
 # initialize mediapipe
-mpHands = mp.solutions.hands
-hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.8)
 mpDrawing = mp.solutions.drawing_utils
 mpDrawingStyles = mp.solutions.drawing_styles
 
+mpHands = mp.solutions.hands
+hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.8, min_tracking_confidence=0.8)
+
+# mpFaceDetection = mp.solutions.face_detection
+# faceDetection = mpFaceDetection.FaceDetection(model_selection=0, min_detection_confidence=0.8)
+## model_selection: 0 -> within 2 meters from camera, 1 -> 2-5 meters from camera
+
+mpFaceMesh = mp.solutions.face_mesh
+faceMesh = mpFaceMesh.FaceMesh(max_num_faces=1, min_detection_confidence=0.8, min_tracking_confidence=0.8, static_image_mode=False)
 
 # Load the gesture recognizer model
 model = load_model('mp_hand_gesture')
@@ -31,10 +38,12 @@ model = load_model('mp_hand_gesture')
 gestureFile = open('gesture.names', 'r')
 classNames = gestureFile.read().split('\n')
 gestureFile.close()
-
+classNames.append("unknown")
+# print(classNames)
+# print(classNames[-1])
 
 # Initialize the webcam for Hand Gesture Recognition Python project
-cameraPort = 0
+cameraPort = 1
 cap = cv2.VideoCapture(cameraPort, cv2.CAP_DSHOW)
 
 # initialize text to speech engine
@@ -54,43 +63,84 @@ tTSEngine.setProperty('rate', speechSpeedRate)
 #        break
 
 
-
 # keep running & capturing video/images
-while True:
+#while True:
+# while camera is running:
+while cap.isOpened():
     # Read each frame from the webcam
-    _, frame = cap.read()
+    capSuccess, frame = cap.read()
     x , y, c = frame.shape
     # Flip the frame vertically
-    frame = cv2.flip(frame, 1)
+    #frame = cv2.flip(frame, 1)
     
     # detect key points
     framergb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     # Get hand landmark prediction
-    result = hands.process(framergb)
+    handResult = hands.process(framergb)
     className = ''
+    
+    # faceResult = faceDetection.process(framergb)
+    faceResult = faceMesh.process(framergb)
 
     # post process the result
-    if result.multi_hand_landmarks:
+    # for hands 
+    if handResult.multi_hand_landmarks:
+        # print("hand result: ", handResult.multi_hand_landmarks)
         landmarks = []
-        for handslms in result.multi_hand_landmarks:
+        for handslms in handResult.multi_hand_landmarks:
+            # print(handslms)
             for lm in handslms.landmark:
-                # print(id, lm)
+                # print(lm)
                 lmx = int(lm.x * x)
                 lmy = int(lm.y * y)
+                # lmz = int(lm.z)
                 landmarks.append([lmx, lmy])
+            # end inner for-loop
+
+            # print(landmarks)
             # Drawing landmarks on frames
             mpDrawing.draw_landmarks(frame, handslms, mpHands.HAND_CONNECTIONS, mpDrawingStyles.get_default_hand_landmarks_style(), mpDrawingStyles.get_default_hand_connections_style())
 
-            #print(landmarks)
-            #print([landmarks])
             # Predict gesture in Hand Gesture Recognition project
+            # note: landmarks -> wrapped -> [landmarks] 
             prediction = model.predict([landmarks])
-            #print(prediction)
-            classID = np.argmax(prediction)
-            className = classNames[classID]
+
+            # prediction is in form [ [probability_1, probability_2, ... , probability_n] ] with n = number of classes
+            # print(prediction)
+
+            #classIndices = []
+            #classProbabilities = []
+            #for idx, classProbability in enumerate(prediction[0]):
+                # print(classProbability)
+            #    if classProbability > 0.8 :
+            #        classIndices.append(idx)
+            #        classProbabilities.append(classProbability)
+
+            #if len(classIndices) == 0:
+            #   print("unknown class")
+            #    className = classNames[-1]
+            #elif len(classIndices) == 1:
+            #    print("1 class")
+            #    classIndex = classIndices[0]
+            #    className = classNames[classIndex]
+            #else:
+            #    print("multi classes")
+            #    classIndex = classIndices[ np.argmax(classProbabilities) ]
+            #    className = classNames[classIndex]
+                
+            classIndex = np.argmax(prediction[0])
+            # print("class index: ", classIndex)
+            
+            if prediction[0][classIndex] > 0.8 :
+                print("1 class 80% prob")
+                className = classNames[classIndex]
+            else:
+                print("unsure class")
+                className = classNames[-1]
+        # end outer for-loop
         
-        
+
         # show the prediction on the frame
         cv2.putText(frame, className, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
 
@@ -100,12 +150,33 @@ while True:
         pTime = cTime
         cv2.putText(frame, "fps: " + str(int(fps)), (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)   
     
+    # end if for hands
+
+    # for face
+    if faceResult.multi_face_landmarks:
+        for facelms in faceResult.multi_face_landmarks:
+            # for lm in facelms.landmark:
+                # print(lm)
+                # lmx = int(lm.x * x)
+                # lmy = int(lm.y * y)
+                # lmz = int(lm.z)
+                # faceLandmarks.append([lmx, lmy])
+            #
+
+            #mpDrawing.draw_detection(frame, detectedFace)
+            mpDrawing.draw_landmarks(image=frame, landmark_list=facelms, connections=mpFaceMesh.FACEMESH_TESSELATION, landmark_drawing_spec=None, connection_drawing_spec=mpDrawingStyles.get_default_face_mesh_tesselation_style())
+            mpDrawing.draw_landmarks(image=frame, landmark_list=facelms, connections=mpFaceMesh.FACEMESH_CONTOURS, landmark_drawing_spec=None, connection_drawing_spec=mpDrawingStyles.get_default_face_mesh_contours_style())
+        # end for-loop
+    # end if for face
+
+
     # Show the final output
     cv2.imshow("Output", frame)
     
     # convert to speech # would block/slow down the app
-    tTSEngine.say(className)
-    tTSEngine.runAndWait()
+    # if className !="" AND className != "unknown":
+        #tTSEngine.say(className)
+        #tTSEngine.runAndWait()
 
     # stop the app when the 'q' key is pressed
     if cv2.waitKey(1) == ord('q'):
