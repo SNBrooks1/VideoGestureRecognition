@@ -10,8 +10,56 @@ from tensorflow.keras.models import load_model
 
 from gtts import gTTS
 import pyttsx3
+import threading
 
 
+
+
+
+# initialize text to speech engine
+tTSEngine = pyttsx3.init()
+
+# language for converting text to audio
+speechLanguage = 'en_US'
+voiceGender = 'voiceGenderFemale'
+speechSpeedRate = 125
+
+tTSEngine.setProperty('voice', tTSEngine.getProperty('voices')[2].id)
+tTSEngine.setProperty('rate', speechSpeedRate)
+
+#for voice in tTSEngine.getProperty('voices'):
+#    if speechLanguage in voice.languages and voiceGender == voice.gender:
+#        tTSEngine.setProperty('voice', voice.id)
+#        break
+
+def produceSpeech (tTSEngine, text):
+    tTSEngine.say(text)
+    tTSEngine.runAndWait()
+    tTSEngine.stop()
+
+
+class speechThread (threading.Thread):
+    def __init__(self, tTSEngine, text):
+        threading.Thread.__init__(self)
+        self.tTSEngine = tTSEngine
+        self.text = text
+    def run(self):
+        produceSpeech(self.tTSEngine, self.text)
+
+
+speechToggle = False
+
+def toggleState (currentState):
+    return not currentState
+
+class toggleThread (threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.currentState = False
+    def run(self):
+        while True:
+            if cv2.waitKey(1) == ord('s'):
+                self.currentState = toggleState(self.currentState)
 
 # initialize time mark
 cTime = 0
@@ -43,24 +91,10 @@ classNames.append("unknown")
 # print(classNames[-1])
 
 # Initialize the webcam for Hand Gesture Recognition Python project
-cameraPort = 1
+cameraPort = 0
 cap = cv2.VideoCapture(cameraPort, cv2.CAP_DSHOW)
 
-# initialize text to speech engine
-tTSEngine = pyttsx3.init()
 
-# language for converting text to audio
-speechLanguage = 'en_US'
-voiceGender = 'voiceGenderFemale'
-speechSpeedRate = 125
-
-tTSEngine.setProperty('voice', tTSEngine.getProperty('voices')[2].id)
-tTSEngine.setProperty('rate', speechSpeedRate)
-
-#for voice in tTSEngine.getProperty('voices'):
-#    if speechLanguage in voice.languages and voiceGender == voice.gender:
-#        tTSEngine.setProperty('voice', voice.id)
-#        break
 
 
 # keep running & capturing video/images
@@ -173,17 +207,33 @@ while cap.isOpened():
     # Show the final output
     cv2.imshow("Output", frame)
     
+    threadNotExist = True
+    try:
+        spThread
+        threadNotExist = False
+    except NameError:
+        threadNotExist = True
+    else:
+        threadNotExist = False
+
     # convert to speech # would block/slow down the app
-    # if className !="" AND className != "unknown":
+    if speechToggle and className !="" and className != "unknown" and (threadNotExist or spThread.is_alive() == False) :
+        spThread = speechThread(tTSEngine, className)
+        spThread.start()
+        #spThread.join()
         #tTSEngine.say(className)
         #tTSEngine.runAndWait()
-
+        # stop the speech engine
+        #tTSEngine.stop()
+    
+    # toggle speech on/off when 's' key is pressed
+    if cv2.waitKey(1) == ord('s'):
+        speechToggle = toggleState(speechToggle)
     # stop the app when the 'q' key is pressed
-    if cv2.waitKey(1) == ord('q'):
+    elif cv2.waitKey(1) == ord('q'):
         break
 
-# stop the speech engine
-tTSEngine.stop()
+
 
 # release the webcam and destroy all active windows
 cap.release()
