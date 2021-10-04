@@ -1,3 +1,13 @@
+# University of North Texas
+# Fall 2021
+# Team project for class CSCE 5280 by Professor Mark Albert
+
+# Team members:
+#Solomon Ubani ( solomonubani@my.unt.edu )
+#Sulav Poudyal ( sulav697@gmail.com )
+#Yen Pham ( yenpham@my.unt.edu )
+#Khoa Ho ( khoaho@my.unt.edu ) 
+#Stephanie Brooks( StephanieBrooks2@my.unt.edu )
 
 # import libraries/packages
 import os
@@ -70,7 +80,7 @@ mpDrawing = mp.solutions.drawing_utils
 mpDrawingStyles = mp.solutions.drawing_styles
 
 mpHands = mp.solutions.hands
-hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.8, min_tracking_confidence=0.8)
+hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.5, min_tracking_confidence=0.7)
 
 # mpFaceDetection = mp.solutions.face_detection
 # faceDetection = mpFaceDetection.FaceDetection(model_selection=0, min_detection_confidence=0.8)
