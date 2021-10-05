@@ -91,11 +91,15 @@ faceMesh = mpFaceMesh.FaceMesh(max_num_faces=1, min_detection_confidence=0.8, mi
 
 # Load the gesture recognizer model
 model = load_model('mp_hand_gesture')
+newModel = load_model("new_mp_hand_gesture_model")
 
 # Load class names
-gestureFile = open('gesture.names', 'r')
-classNames = gestureFile.read().split('\n')
-gestureFile.close()
+#gestureFile = open('gesture.names', 'r')
+#classNames = gestureFile.read().split('\n')
+#gestureFile.close()
+
+newGFile = open("new_gesture_names.txt", 'r')
+classNames = newGFile.read().split('\n')
 classNames.append("unknown")
 # print(classNames)
 # print(classNames[-1])
@@ -105,7 +109,10 @@ cameraPort = 0
 cap = cv2.VideoCapture(cameraPort, cv2.CAP_DSHOW)
 
 
+#import inspect
 
+#sig = inspect.signature(model.fit)
+#print(str(sig))
 
 # keep running & capturing video/images
 #while True:
@@ -131,9 +138,11 @@ while cap.isOpened():
     # for hands 
     if handResult.multi_hand_landmarks:
         # print("hand result: ", handResult.multi_hand_landmarks)
+        multiLandmarks = []
         landmarks = []
         for handslms in handResult.multi_hand_landmarks:
             # print(handslms)
+            landmarks = []
             for lm in handslms.landmark:
                 # print(lm)
                 lmx = int(lm.x * x)
@@ -147,12 +156,14 @@ while cap.isOpened():
             mpDrawing.draw_landmarks(frame, handslms, mpHands.HAND_CONNECTIONS, mpDrawingStyles.get_default_hand_landmarks_style(), mpDrawingStyles.get_default_hand_connections_style())
 
             # Predict gesture in Hand Gesture Recognition project
-            # note: landmarks -> wrapped -> [landmarks] 
-            prediction = model.predict([landmarks])
+            # note: landmarks = [] -> wrapped -> [landmarks] = [[]]
+            # the model can accept [ [landmarks] , [landmarks], ... , [landmarks] ] = [ [], [], ... , [] ]
+            #prediction = model.predict([landmarks])
+            prediction = newModel.predict([landmarks])
 
             # prediction is in form [ [probability_1, probability_2, ... , probability_n] ] with n = number of classes
             # print(prediction)
-
+            
             #classIndices = []
             #classProbabilities = []
             #for idx, classProbability in enumerate(prediction[0]):
@@ -177,8 +188,8 @@ while cap.isOpened():
             # print("class index: ", classIndex)
             
             if prediction[0][classIndex] > 0.8 :
-                print("1 class 80% prob")
                 className = classNames[classIndex]
+                print("1 class >80% prob: ", className)
             else:
                 print("unsure class")
                 className = classNames[-1]
@@ -197,19 +208,19 @@ while cap.isOpened():
     # end if for hands
 
     # for face
-    if faceResult.multi_face_landmarks:
-        for facelms in faceResult.multi_face_landmarks:
+    #if faceResult.multi_face_landmarks:
+        #for facelms in faceResult.multi_face_landmarks:
             # for lm in facelms.landmark:
                 # print(lm)
                 # lmx = int(lm.x * x)
                 # lmy = int(lm.y * y)
                 # lmz = int(lm.z)
                 # faceLandmarks.append([lmx, lmy])
-            #
+            # end for-loop
 
-            #mpDrawing.draw_detection(frame, detectedFace)
-            mpDrawing.draw_landmarks(image=frame, landmark_list=facelms, connections=mpFaceMesh.FACEMESH_TESSELATION, landmark_drawing_spec=None, connection_drawing_spec=mpDrawingStyles.get_default_face_mesh_tesselation_style())
-            mpDrawing.draw_landmarks(image=frame, landmark_list=facelms, connections=mpFaceMesh.FACEMESH_CONTOURS, landmark_drawing_spec=None, connection_drawing_spec=mpDrawingStyles.get_default_face_mesh_contours_style())
+            ##mpDrawing.draw_detection(frame, detectedFace)
+            #mpDrawing.draw_landmarks(image=frame, landmark_list=facelms, connections=mpFaceMesh.FACEMESH_TESSELATION, landmark_drawing_spec=None, connection_drawing_spec=mpDrawingStyles.get_default_face_mesh_tesselation_style())
+            #mpDrawing.draw_landmarks(image=frame, landmark_list=facelms, connections=mpFaceMesh.FACEMESH_CONTOURS, landmark_drawing_spec=None, connection_drawing_spec=mpDrawingStyles.get_default_face_mesh_contours_style())
         # end for-loop
     # end if for face
 
