@@ -58,14 +58,14 @@ hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.5, min_trackin
 # Load class names
 
 
-newGFile = open("new_gesture_names.txt", 'r')
+newGFile = open("gestureNames24classes.txt", 'r')
 newGClassNames = newGFile.read().split('\n')
 numOfGClasses = len(newGClassNames)
 #print(newGClassNames)
 #print(numOfGClasses)
 
 # load data
-dataFilePath = r"./data_handLms.txt"
+dataFilePath = r"./data_handLms_21classes_train.txt"
 inputFile = open(dataFilePath, "r")
 
 readLines = inputFile.readlines()
@@ -115,10 +115,10 @@ newModel.add(Dense(numOfGClasses, name='newDenseLayer', activation='softmax'))
 newModel.compile(optimizer='Adam',loss='categorical_crossentropy', metrics = ['categorical_accuracy'])
 
 # train
-newModel.fit(x=xsTrain, y=ysTrain, epochs=10, callbacks=[tb_callback])
+newModel.fit(x=xsTrain, y=ysTrain, epochs=100, callbacks=[tb_callback])
 
 # save it
-newModel.save("new_mp_hand_gesture_model")
+newModel.save("newMPHandGestureModel_24classes")
 
 
 

@@ -91,14 +91,14 @@ faceMesh = mpFaceMesh.FaceMesh(max_num_faces=1, min_detection_confidence=0.8, mi
 
 # Load the gesture recognizer model
 model = load_model('mp_hand_gesture')
-newModel = load_model("new_mp_hand_gesture_model")
+newModel = load_model("newMPHandGestureModel_24classes")
 
 # Load class names
 #gestureFile = open('gesture.names', 'r')
 #classNames = gestureFile.read().split('\n')
 #gestureFile.close()
 
-newGFile = open("new_gesture_names.txt", 'r')
+newGFile = open("gestureNames24classes.txt", 'r')
 classNames = newGFile.read().split('\n')
 classNames.append("unknown")
 # print(classNames)
@@ -187,9 +187,9 @@ while cap.isOpened():
             classIndex = np.argmax(prediction[0])
             # print("class index: ", classIndex)
             
-            if prediction[0][classIndex] > 0.8 :
+            if prediction[0][classIndex] > 0.7 :
                 className = classNames[classIndex]
-                print("1 class >80% prob: ", className)
+                print("1 class >70% prob: ", className)
             else:
                 print("unsure class")
                 className = classNames[-1]

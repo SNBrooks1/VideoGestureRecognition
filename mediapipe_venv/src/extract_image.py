@@ -14,11 +14,11 @@
 # import libraries/packages
 import os
 import time
-import cv2
+
 import numpy as np
+import cv2
 import mediapipe as mp
-import tensorflow as tf
-from tensorflow.keras.models import load_model
+
 import glob
 import json
 
@@ -33,7 +33,7 @@ hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.5, min_trackin
 #os.chdir('')
 
 dataDirectory = r"../DataDir/dataset/"
-dataFilePath = r"./data_handLms.txt"
+dataFilePath = r"./data_handLms_21classes.txt"
 # Load class names
 gClassNames = [directory for directory in os.listdir(dataDirectory) if os.path.isdir(dataDirectory + directory)]
 numOfGClasses = len(gClassNames)
@@ -54,7 +54,7 @@ for gClassName in gClassNames:
         if handResult.multi_hand_landmarks:
             # print("hand result: ", handResult.multi_hand_landmarks)
             # -- Khoa, Oct 5 2021.
-            # recognizer model default to 1 hand, so we are not using multiLandmarks here 
+            # hand key point extractor model default to 1 hand, so we are not using multiLandmarks here 
             # we still leave the related code in, in case we want to change the model to take multi hands
             # multiLandmarks = []
             # landmarks = []
@@ -77,12 +77,11 @@ for gClassName in gClassNames:
                 #landmarks = multiLandmarks[0]
 
             outputStr = json.JSONEncoder().encode({"class": gClassName, "landmarks":landmarks})
-            print(outputStr)
+            #print(outputStr)
 
             outputFile.write(outputStr)
             outputFile.write("\n")
-            outputFile.write(outputStr)
-            outputFile.write("\n")        
+      
 
 outputFile.close()
 
@@ -94,11 +93,6 @@ outputFile.close()
 #for readLine in readLines:
     #readStrs = readLine.split(",")
     #print("read: ", readStrs)
-
-
-cv2.waitKey(0)
-
-cv2.destroyAllWindows()
 
 
 
