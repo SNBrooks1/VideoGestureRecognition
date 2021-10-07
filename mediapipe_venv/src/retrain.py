@@ -57,8 +57,8 @@ hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.5, min_trackin
 
 # Load class names
 
-
-newGFile = open("gestureNames24classes.txt", 'r')
+#newGFile = open("gestureNames24classes.txt", 'r')
+newGFile = open("gestureNames21classes.txt", 'r')
 newGClassNames = newGFile.read().split('\n')
 numOfGClasses = len(newGClassNames)
 #print(newGClassNames)
@@ -84,14 +84,14 @@ for readLine in readLines:
     gClassProbList = [0] * numOfGClasses
     gClassProbList[gClassId] = 1
     #print("id: ", gClassId)
-    xsTrain.append( [[handLandmarks]] )
+    xsTrain.append( [handLandmarks] )
     ysTrain.append(gClassProbList)
     
 
 
 # Training tracking
-log_dir = os.path.join('Logs')
-tb_callback = TensorBoard(log_dir=log_dir)
+#log_dir = os.path.join('Logs')
+#tb_callback = TensorBoard(log_dir=log_dir)
 
 # Load the gesture recognizer model
 model = load_model("mp_hand_gesture")
@@ -100,25 +100,32 @@ model = load_model("mp_hand_gesture")
 newModel = Sequential()
 
 # Copying all the layers from the old model, except the output layers
-for layer in model.layers[:-1]: # just exclude last layer from copying
-    newModel.add(layer)
+
+newModel.add(model.layers[0]) # just copy the first layer (input)
 
 # if necessary, prevent the already trained layers from being trained again 
 # for layer in newModel.layers:
     #layer.trainable = False
 
-# adding the new output layer, 
+# adding the new layers, including new output layers
 # note: the "name" parameter is important and should be unique here to avoid error
-newModel.add(Dense(numOfGClasses, name='newDenseLayer', activation='softmax'))
+newModel.add(Dense(64, name='newDenseLayer1', activation='relu'))
+newModel.add(Dense(128, name='newDenseLayer2', activation='relu'))
+newModel.add(Dense(256, name='newDenseLayer3', activation='relu'))
+newModel.add(Dense(512, name='newDenseLayer4', activation='relu'))
+newModel.add(Dense(256, name='newDenseLayer5', activation='relu'))
+newModel.add(Dense(128, name='newDenseLayer6', activation='relu'))
+newModel.add(Dense(64, name='newDenseLayer7', activation='relu'))
+newModel.add(Dense(numOfGClasses, name='newDenseLayerOutput', activation='softmax'))
 
 # compile the new Model
 newModel.compile(optimizer='Adam',loss='categorical_crossentropy', metrics = ['categorical_accuracy'])
 
 # train
-newModel.fit(x=xsTrain, y=ysTrain, epochs=100, callbacks=[tb_callback])
+newModel.fit(x=xsTrain, y=ysTrain, epochs=22)
 
 # save it
-newModel.save("newMPHandGestureModel_24classes")
+newModel.save("newMPHandGestureModel_21classes")
 
 
 

@@ -28,29 +28,32 @@ mpDrawing = mp.solutions.drawing_utils
 mpDrawingStyles = mp.solutions.drawing_styles
 
 mpHands = mp.solutions.hands
-hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.5, min_tracking_confidence=0.7)
+hands = mpHands.Hands(max_num_hands=1, min_detection_confidence=0.1, min_tracking_confidence=0.1)
 
 #os.chdir('')
 
-dataDirectory = r"../DataDir/dataset/"
-dataFilePath = r"./data_handLms_21classes.txt"
+dataDirectory = r"../DataDir/dataset_test/"
+dataFilePath = r"./data_handLms_21classes_test.txt"
 # Load class names
 gClassNames = [directory for directory in os.listdir(dataDirectory) if os.path.isdir(dataDirectory + directory)]
 numOfGClasses = len(gClassNames)
-#print(gClassNames)
-#print(numOfGClasses)
+print("G Classes: ", gClassNames)
+print("Num of classes: ", numOfGClasses)
 
 outputFile = open(dataFilePath, "w")
 
+fileCount = 0
+recogCount = 0
 for gClassName in gClassNames:
     gDataDir = dataDirectory + gClassName
-    #print(gDataDir)
+    print(gDataDir)
     for dFile in glob.glob(gDataDir + r"/*"):
         frame = cv2.imread(dFile)
         x , y, c = frame.shape 
         framergb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         handResult = hands.process(framergb)
 
+        fileCount += 1
         if handResult.multi_hand_landmarks:
             # print("hand result: ", handResult.multi_hand_landmarks)
             # -- Khoa, Oct 5 2021.
@@ -81,10 +84,17 @@ for gClassName in gClassNames:
 
             outputFile.write(outputStr)
             outputFile.write("\n")
-      
+
+            recogCount += 1
+
+    print("Running Sum file count: ", fileCount)
+    print("Running Sum recog count: ", recogCount)  
+    print("____________________________________\n")
 
 outputFile.close()
 
+print("Total file count: ", fileCount)
+print("Total recog count: ", recogCount)
 #inputFile = open(dataFilePath, "r")
 
 #readLines = inputFile.readlines()

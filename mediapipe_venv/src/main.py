@@ -156,12 +156,15 @@ while cap.isOpened():
             mpDrawing.draw_landmarks(frame, handslms, mpHands.HAND_CONNECTIONS, mpDrawingStyles.get_default_hand_landmarks_style(), mpDrawingStyles.get_default_hand_connections_style())
 
             # Predict gesture in Hand Gesture Recognition project
-            # note: landmarks = [] -> wrapped -> [landmarks] = [[]]
-            # the model can accept [ [landmarks] , [landmarks], ... , [landmarks] ] = [ [], [], ... , [] ]
+            # note: landmarks = [ 21x[] ] -> wrapped -> [landmarks] = [ [ 21x[] ] ]
+            # the model can accept [ landmarks , landmarks, ... , landmarks ] = [ [ 21x[] ], [ 21x[] ], ... , [ 21x[] ] ]
+            # it is meant to accept "a list containing multiple lists of landmarks",
+            # in which case it will also output a "list of lists of probabilities"
+
             #prediction = model.predict([landmarks])
             prediction = newModel.predict([landmarks])
-
-            # prediction is in form [ [probability_1, probability_2, ... , probability_n] ] with n = number of classes
+            
+            # prediction output is in form [ [probability_1, probability_2, ... , probability_n] ] with n = number of classes
             # print(prediction)
             
             #classIndices = []
@@ -184,6 +187,7 @@ while cap.isOpened():
             #    classIndex = classIndices[ np.argmax(classProbabilities) ]
             #    className = classNames[classIndex]
                 
+            # making decision on which class of gesture the captured frame should be
             classIndex = np.argmax(prediction[0])
             # print("class index: ", classIndex)
             
