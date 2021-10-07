@@ -108,23 +108,15 @@ def extract_keypoints(results):
 # Set the folder path for the numpy arrays.
 DATA_PATH = os.path.join('/content/Data')
 
-# 
-# Get the names of the gestures from the dataset dataframe.
-# ********EXTRACT THE GESTURE NAME FROM THE DATASET HERE*******
-# gestures = np.array(getGestureNameList(dataFrame, columnNumber))
-#gestures = np.array(['thumbsup'])
-
-# Set the number of videos contained in the dataset.
-# ********EXTRACT THE NUMBER OF ROWS FROM THE DATASET HERE*******
-#no_sequences = 4
 
 """Takes the video, performs keypoints extractions by frame, and saves the resulting numpy arrays to a folder. **** The numpy_array_path needs some tweaking****"""
 
 # extractKPFromVid: Performs keypoints extraction on each frame of the input video
 # and saves the keypoints to a numpy array folder
-def extractKPFromVid(videoMP4,action,folderNum):
+def extractKPFromVid(videoMP4,action):
   with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-    
+    # START
+    print("START KP extraction from vid: \n")
     # Sets count.
     count = 0
     
@@ -140,56 +132,42 @@ def extractKPFromVid(videoMP4,action,folderNum):
     # Set the framerate 
     frameRate = cap.get(5)
 
+    print("framerate: ",frameRate,"\n")
+
     # While the video is running, read in the video frames
     # and extract the keypoints to a file. 
     while(cap.isOpened()):
-
+      print("Start video processing. . .")
       # Sets the frame number
       frameId = cap.get(1)
 
       # Reads in the frame.
       ret, frame = cap.read()
-
+      print(ret)
       # Display the video frame with landmarks overlaid.
       #cv2_imshow(frame)
 
       # If there are no more frames, the capturing stops.
-      # Otherwise, the next frame is read in. 
-      # to the file.
+      # Otherwise, the next frame is read in.
       if (ret != True):
-          break
+        print("End of video: ",videoMP4)
+        break
 
-      # If the frame number is divisible by 4, extract
-      # and write the keypoints to a subfolder.
-      if (frameId % 4 == 0):
+      # ---- Extract and append the keypoints----.
+      # Keypoints detections.
+      image,results = mediapipe_detection(frame,holistic)
 
-        # Keypoints detections.
-        image,results = mediapipe_detection(frame,holistic)
+      # Increment count
+      count+=1
 
-        #filename ="frame%d" % count;
+      #---Export keypoints---
+      # Get the keypoints array
+      keypoints = extract_keypoints(results)
 
-        # Increment count
-        count+=1
-        
-        #cv2.imwrite(filename, frame)
-        #print(filename)
-
-        #---Export keypoints---
-        # Get the keypoints array
-        keypoints = extract_keypoints(results)
-
-        #***** Set the numpy array path(Data/Gesture/GestureVideo#/numpyfile)
-        numpy_array_path = os.path.join(DATA_PATH,action,folderNum,str(count))
-        print(numpy_array_path)
-
-        # Save the keypoints to the path.
-        np.save(numpy_array_path,keypoints)
-
-        # Append the keypoints to the numpyList.
-        res = np.load(os.path.join(DATA_PATH,action,folderNum,"{}.npy".format(str("frame%d" % count))))
-        if(count<31):
-          numpyList.append(res)
-        #numpyList.append(keypoints)
+      # Append the keypoints to the numpyList.
+      if(count<89):
+        numpyList.append(keypoints)     
+        break
 
     # Stops the capture.
     cap.release()
@@ -201,56 +179,46 @@ def extractKPFromVid(videoMP4,action,folderNum):
     # Return the list of numpy arrays.
     return numpyList
 
-# Read in the csv file to a dataframe.
+# Set the folder path for the numpy arrays.
+DATA_PATH = os.path.join('/content/Data')
 
-# Get the labels and ids & set to a map.
+# Read in the text file to a dataframe.
+#df_gestures = pd.read_csv("/content/Data/labelmap.txt",sep=",",header=0)
 
 """Video keypoint Extraction"""
 
 ##-------------------##
-## The videoGestures array will need to be updated to work with a dataframe. Extraction
-## of the file names and gesture names need to be done here.
-videoGestures = ['thumbsup01.mp4','thumbsup02.mp4','thumbsup03.mp4',
-             'thumbsup04.mp4']
-
+# Set the gestures, window, and sequences.
+gestures = ['Down','Left','Right','Up']
+window,sequences = [],[]
+ 
 # Creates the map for gesture to classification values.
 gestureLabelMap = {label:num for num,label in enumerate(gestures)}
 
-folderCount = 1
+# Loops through each video per gesture, processes the video keypoints,
+#  and builds a list of concatenated numpy arrays.
+for gesture in gestures:
 
-sequences,labels = [],[]
-#numpyList = []
-window = []
-for vid in videoGestures:  
+  for root,dirs,files in os.walk(os.path.join(DATA_PATH,gesture)):
+    print(os.path.join(DATA_PATH,gesture))
+    for fil in files:
+      # Extract frames and set the list of numpy arrays from the video.
+      window = extractKPFromVid(os.path.join(DATA_PATH,gesture,fil),gesture)
 
-    # Extract frames and set the list of numpy arrays from the video.
-    #videoNumpys = extractKPFromVid(vid,'thumbsup',str(folderCount))
-    window = extractKPFromVid(vid,'thumbsup',str(folderCount))
+  # Append the numpyLists for the gesture.
+  sequences.append(window)
+  print("Sequence complete for: ",gesture,"\nSEQUENCE: ",sequences)
 
-    # Add the numpyList for the gesture
-    sequences.append(window)
-
-    labels.append(gestureLabelMap['thumbsup'])
-
-    folderCount+=1
-
-print(type(window))
-print(type(window[0]))
-print(np.array(window).shape)
-
-print(np.array(sequences).shape)
-print(np.array(labels).shape)
-X = np.array(sequences)
-print(X.shape)
-
-np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
-np.array(sequences).shape
-
+# Output label dimensions.
 np.array(labels).shape
 
+# Set X to list of numpy arrays.
 X = np.array(sequences)
+
+# Output X dimensions.
 X.shape
 
+# Set the y value
 y=to_categorical(labels).astype(int)
 
 """Train Test Split"""
@@ -266,7 +234,9 @@ tb_callback = TensorBoard(log_dir=log_dir)
 # Set the model
 model = Sequential()
 
-# Add the LSTM layers.
+# Add the LSTM layers. 
+# **Note: input_shape: If X.shape values were [a,b,c] it would just be b,c.
+# If X.shape outputs (4,30,258), the input_shape is (30,258)**
 model.add(LSTM(64,return_sequences=True,activation='relu',input_shape=(30,258)))
 model.add(LSTM(128,return_sequences=True,activation='relu'))
 model.add(LSTM(64,return_sequences=False,activation='relu'))
